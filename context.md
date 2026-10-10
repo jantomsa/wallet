@@ -15,7 +15,7 @@ Homework assignment for Wultra.
 - Java 25, Spring Boot 4.1, Maven (wrapper included)
 - Spring Web MVC, Bean Validation
 - springdoc-openapi – OpenAPI description + Swagger UI
-- H2 in-memory database (PostgreSQL mode) accessed via `JdbcTemplate`
+- Spring Data JPA (Hibernate) on H2 in-memory database (PostgreSQL mode)
 - CNB daily exchange rates as the rate source
 
 ## Repository structure
