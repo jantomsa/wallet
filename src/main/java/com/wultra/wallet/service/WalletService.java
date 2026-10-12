@@ -12,6 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.wultra.wallet.dto.BalanceResponse;
 import com.wultra.wallet.dto.ActionInputDTO;
+import com.wultra.wallet.dto.CreateWalletRequest;
+import com.wultra.wallet.dto.WalletResponse;
 import com.wultra.wallet.entity.WalletEntity;
 import com.wultra.wallet.exception.ErrorCode;
 import com.wultra.wallet.exception.WultraWalletException;
@@ -40,6 +42,26 @@ public class WalletService {
                         ErrorCode.ENTITY_NOT_FOUND));
         verifySameCurrency(wallet, input.getCurrency());
         return wallet;
+    }
+
+    @Transactional
+    public WalletResponse createWallet(CreateWalletRequest request) {
+        WalletEntity wallet = repository.save(WalletEntity.builder()
+                .id(UUID.randomUUID())
+                .userId(request.getUserId())
+                .currency(request.getCurrency())
+                .name(request.getName())
+                .amount(BigDecimal.ZERO)
+                .build());
+        log.info("Created {} wallet {} for user {}", wallet.getCurrency(), wallet.getId(), wallet.getUserId());
+
+        return WalletResponse.builder()
+                .id(wallet.getId())
+                .userId(wallet.getUserId())
+                .currency(wallet.getCurrency())
+                .name(wallet.getName())
+                .amount(wallet.getAmount())
+                .build();
     }
 
     @Transactional(readOnly = true)

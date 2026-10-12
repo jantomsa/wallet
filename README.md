@@ -9,16 +9,16 @@ Requires JDK 25:
 ./mvnw spring-boot:run
 ```
 
-Or with Docker (no local JDK needed):
+Or with Docker Compose (no local JDK needed):
 ```
-docker build -t wallet .
-docker run -p 8080:8080 wallet
+docker compose up --build
 ```
 
 ## API overview
 
 | Method | Path | Description |
 |---|---|---|
+| `POST` | `/v1/wallet` | Create a wallet in one currency for a user (starts with balance 0) |
 | `PUT` | `/v1/wallet/deposit` | Deposit money into a wallet (currency must match the wallet) |
 | `PUT` | `/v1/wallet/withdraw` | Withdraw money from a wallet (max. the wallet balance) |
 | `GET` | `/v1/wallet/user/{userId}/currency/{currency}` | Total balance of all user's wallets converted to `currency` |
@@ -28,6 +28,16 @@ in IntelliJ IDEA (HTTP Client) or VS Code (REST Client).
 
 The application starts with one sample wallet (`src/main/resources/data.sql`):
 user `905a48a6-ffcf-430e-9e92-44bfa08427ac`, EUR wallet `fcb58bd7-f09a-47f2-a92d-89e20095a4da` with balance 1.00 EUR.
+
+**Create a USD wallet**
+```
+curl -X POST 'http://localhost:8080/v1/wallet' \
+  -H 'Content-Type: application/json' \
+  -d '{"userId": "905a48a6-ffcf-430e-9e92-44bfa08427ac", "currency": "USD", "name": "Travel money"}'
+```
+```json
+{ "id": "<new wallet id>", "userId": "905a48a6-ffcf-430e-9e92-44bfa08427ac", "currency": "USD", "name": "Travel money", "amount": 0 }
+```
 
 **Deposit 1 EUR**
 ```
@@ -68,6 +78,10 @@ Generated at runtime by springdoc-openapi. With the application running on the d
 
 ## Design decisions
 
+**Wallet model.** One wallet = one currency, owned by a user (`userId`). A user can have wallets in several
+currencies (`POST /v1/wallet`). Deposits and withdrawals are never converted – the request currency must match
+the wallet currency, otherwise `400 CURRENCY_MISMATCH`. Conversion happens only when computing the total balance.
+
 ### 1. Missing rates (weekends, public holidays)
 In response is date, for which is deposit calculated. It seems that date "validFor" 
 returned in CNB api is always same for all results and based on that I am using only findFirst. 
@@ -96,9 +110,19 @@ more real-world scenario, where we are leaving these thing of Pessimistic lockin
 This query has locking in name, so developer will not use it without knowledge. 
 
 ### 6. Errors. What do clients receive for invalid input, unknown currency, or insufficient funds?
-On invalid input - null value in required parameter, invalid currency will end with 400 error without any detail message. 
-To have exception handled will require to handle them in "WultraWalletExceptionHandler". The "Insufficient funds" is situation exception ad is handled with custom exception.
-Some situational exceptions are handled and explained to user. 
+Business errors return `{ "code": "...", "message": "..." }` with the HTTP status of the error code:
+
+| Situation | Response |
+|---|---|
+| Wallet not found | `404 ENTITY_NOT_FOUND` |
+| Currency does not match the wallet | `400 CURRENCY_MISMATCH` |
+| Currency not published by CNB (e.g. `XAU`) | `400 UNSUPPORTED_CURRENCY` |
+| Withdrawal above the balance | `409 INSUFFICIENT_FUNDS` |
+| CNB unavailable and no rates cached | `503 RATES_UNAVAILABLE` |
+| Invalid input (missing field, negative amount, invalid ISO code, malformed JSON) | `400`, Spring's default error body |
+
+Invalid input is rejected by validation, but does not use the `{code, message}` format yet – that would need
+handlers for the validation exceptions in `WultraWalletExceptionHandler` (see Limitations).
 
 ### 7. CZK. CNB quotes rates against CZK. How do you treat CZK itself?
 I threat the CZK as rate multiplier with 1, so it will flow into common logic, but it will do noting. 
@@ -107,9 +131,13 @@ I threat the CZK as rate multiplier with 1, so it will flow into common logic, b
 1. Exposure to AI - not done.
 2. Docker file and docker-compose added.
 3. Logging provided, health endpoints are accessible (http://localhost:8080/actuator/health/liveness)
-4. 
 
-## Limitations: 
-- There is no security
-- There is no limitation on currencies, you can add any currency, but in CNB is only some of them.
-- 
+
+## Limitations
+- No authentication/authorization – anyone who knows a wallet id can use it.
+- Wallets can be created in any ISO currency, but CNB publishes rates only for some of them – a wallet in such a currency
+  makes the total balance fail with `400 UNSUPPORTED_CURRENCY`.
+- Invalid input returns Spring's default 400 body, not the `{code, message}` format.
+- The same scale (2 decimals) is used for all currencies (JPY would naturally have 0, BHD 3).
+- A balance is stored, not derived from a ledger of transactions – there is no history.
+- If CNB publishes after 15:00, the new rates are picked up the next working day.

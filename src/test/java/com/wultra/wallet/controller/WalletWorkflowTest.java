@@ -1,8 +1,10 @@
 package com.wultra.wallet.controller;
 
 import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.comparesEqualTo;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -26,8 +28,6 @@ import org.springframework.web.client.ResourceAccessException;
 
 import com.wultra.wallet.dto.cnb.CnbExRate;
 import com.wultra.wallet.dto.cnb.CnbExRatesResponse;
-import com.wultra.wallet.entity.WalletEntity;
-import com.wultra.wallet.repository.WalletRepository;
 import com.wultra.wallet.service.CnbApiClient;
 import com.wultra.wallet.service.CurrencyRateService;
 
@@ -60,9 +60,6 @@ class WalletWorkflowTest {
 
     @Value("${local.server.port}")
     private int port;
-
-    @Autowired
-    private WalletRepository walletRepository;
 
     @Autowired
     private CacheManager cacheManager;
@@ -124,6 +121,36 @@ class WalletWorkflowTest {
     }
 
     @Test
+    void createdWalletIsEmptyAndBelongsToUser() {
+        BigDecimal amount = given()
+                .contentType(ContentType.JSON)
+                .body(createWalletJson(userId, "JPY", "Trip to Japan"))
+                .when().post()
+                .then()
+                .statusCode(201)
+                .body("id", notNullValue())
+                .body("userId", equalTo(userId.toString()))
+                .body("currency", equalTo("JPY"))
+                .body("name", equalTo("Trip to Japan"))
+                // JSON "0" is read as Integer, not BigDecimal – extract explicitly and compare by value
+                .extract().jsonPath().getObject("amount", BigDecimal.class);
+
+        assertThat(amount).isEqualByComparingTo(BigDecimal.ZERO);
+    }
+
+    @Test
+    void createWalletWithoutUserIdIsRejected() {
+        given()
+                .contentType(ContentType.JSON)
+                .body("""
+                        {"currency": "EUR", "name": "No owner"}
+                        """)
+                .when().post()
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
     void cnbUnavailableAndNothingCachedReturns503() {
         when(cnbApiClient.getDailyRates(any(LocalDate.class))).thenThrow(new ResourceAccessException("CNB down"));
         moneyAction("/deposit", usdWalletId, "USD", "10");
@@ -178,13 +205,21 @@ class WalletWorkflowTest {
                 """.formatted(walletId, currency, amount);
     }
 
+    /** Creates the wallet over the API (POST /v1/wallet) – the whole workflow runs through HTTP. */
     private UUID createEmptyWallet(Currency currency) {
-        WalletEntity wallet = new WalletEntity();
-        wallet.setId(UUID.randomUUID());
-        wallet.setUserId(userId);
-        wallet.setCurrency(currency);
-        wallet.setName(currency.getCurrencyCode() + " wallet");
-        wallet.setAmount(BigDecimal.ZERO);
-        return walletRepository.save(wallet).getId();
+        String id = given()
+                .contentType(ContentType.JSON)
+                .body(createWalletJson(userId, currency.getCurrencyCode(), currency.getCurrencyCode() + " wallet"))
+                .when().post()
+                .then()
+                .statusCode(201)
+                .extract().path("id");
+        return UUID.fromString(id);
+    }
+
+    private static String createWalletJson(UUID userId, String currency, String name) {
+        return """
+                {"userId": "%s", "currency": "%s", "name": "%s"}
+                """.formatted(userId, currency, name);
     }
 }

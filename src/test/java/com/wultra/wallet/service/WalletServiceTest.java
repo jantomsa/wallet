@@ -42,10 +42,11 @@ class WalletServiceTest {
 
     @BeforeEach
     void setUp() {
-        wallet = new WalletEntity();
-        wallet.setId(WALLET_ID);
-        wallet.setCurrency(EUR);
-        wallet.setAmount(new BigDecimal("10.00"));
+        wallet = WalletEntity.builder()
+                .id(WALLET_ID)
+                .currency(EUR)
+                .amount(new BigDecimal("10.00"))
+                .build();
     }
 
     @Test

@@ -102,12 +102,13 @@ class ConcurrentMoneyOperationsTest {
     }
 
     private UUID createWallet(String amount) {
-        WalletEntity wallet = new WalletEntity();
-        wallet.setId(UUID.randomUUID());
-        wallet.setUserId(UUID.randomUUID());
-        wallet.setCurrency(EUR);
-        wallet.setName("concurrency test");
-        wallet.setAmount(new BigDecimal(amount));
+        WalletEntity wallet = WalletEntity.builder()
+                .id(UUID.randomUUID())
+                .userId(UUID.randomUUID())
+                .currency(EUR)
+                .name("concurrency test")
+                .amount(new BigDecimal(amount))
+                .build();
         return walletRepository.save(wallet).getId();
     }
 

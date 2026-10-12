@@ -22,6 +22,7 @@ docker compose up --build                                # run in Docker (no loc
 ## Architecture
 
 Request flow: `WalletControllerV1` (`/v1/wallet`) → `WalletService` → `WalletRepository` / `CurrencyRateService`.
+Endpoints: `POST /v1/wallet` (create wallet), `PUT /deposit`, `PUT /withdraw`, `GET /user/{userId}/currency/{currency}` (total balance).
 
 - **Wallet model**: one `WalletEntity` row = one wallet in a single currency owned by a `userId`. Deposit/withdraw never convert — the request currency must match the wallet currency (`CURRENCY_MISMATCH` otherwise). Only the total-balance endpoint converts, summing all of a user's wallets into the target currency.
 - **Schema**: defined in `schema.sql` (with a non-negative amount CHECK); Hibernate runs with `ddl-auto=validate`, so entity changes require matching `schema.sql` changes.

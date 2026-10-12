@@ -6,6 +6,16 @@
 @userId = 905a48a6-ffcf-430e-9e92-44bfa08427ac
 @walletId = fcb58bd7-f09a-47f2-a92d-89e20095a4da
 
+### Create a USD wallet for the sample user (returns the new wallet id)
+POST {{host}}/v1/wallet
+Content-Type: application/json
+
+{
+  "userId": "{{userId}}",
+  "currency": "USD",
+  "name": "Travel money"
+}
+
 ### Deposit 1 EUR
 PUT {{host}}/v1/wallet/deposit
 Content-Type: application/json
