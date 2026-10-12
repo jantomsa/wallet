@@ -41,3 +41,15 @@ All amounts and CNB rates are "BigDecimal", never "double" (CNB JSON numbers are
   before and 2 after the decimal point, which matches the DB column `DECIMAL(19, 2)`.
 - Ive tried to put the rounding and scale into property, but its not used everywhere unfortunately. Some of it is in annotations and so on. 
 
+### 5. Concurrency. What happens with simultaneous withdrawals from the same balance?
+I was not sure, which storage to use. At first wanted to use just plain Map as storage. But later it was nicer to use H2 in memory database and use 
+more real-world scenario, where we are leaving these thing of Pessimistic locking to DB. Goal of my solution is to lock row for update on select - (SELECT x ... FOR UPDATE).
+This query has locking in name, so developer will not use it without knowledge. 
+
+### 6. Errors. What do clients receive for invalid input, unknown currency, or insufficient funds?
+On invalid input - null value in required parameter, invalid currency will end with 400 error without any detail message. 
+To have exception handled will require to handle them in "WultraWalletExceptionHandler". The "Insufficient funds" is situation exception ad is handled with custom exception.
+Some situational exceptions are handled and explained to user. 
+
+### 7. CZK. CNB quotes rates against CZK. How do you treat CZK itself?
+I threat the CZK as rate multiplier with 1, so it will flow into common logic, but it will do noting. 

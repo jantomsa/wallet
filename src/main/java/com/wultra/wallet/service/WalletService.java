@@ -55,7 +55,6 @@ public class WalletService {
         return new BalanceResponse(total, targetCurrency, rates.getValidFor());
     }
 
-    /// todo - Approach will be verified in test, desired thing is Pessimistic lock handled in DB
     @Transactional
     public void deposit(ActionInputDTO input) {
         log.info("Making deposit with input: {}", input);
