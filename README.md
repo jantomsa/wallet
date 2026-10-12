@@ -30,3 +30,10 @@ Otherwise, I would return list of currencies with dates. Let the client decide w
 
 ### 2. Rate units (100 JPY, 100 HUF)
 CNB quotes some currencies per multiple units (e.g. 100 JPY = 21.045 CZK), so every conversion uses the quoted amount into CZK first, then to target.
+
+### 3. CNB unavailable. What does the API do when CNB cannot be reached? Does it cache rates?
+Ive added the in-memory cache. Ive found that rates are refreshed once per day around 14:30. So the TTL for cache is 3min from that time for hour. It will try to get refreshed on working days.
+If data are cached for day and CNB is down, it will still serve data. Timezone is set to be sure, that cron is running at correct time.
+
+### 4. Money precision. How do you represent amounts, and what rounding rules apply to conversions?
+todo

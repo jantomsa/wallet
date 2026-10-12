@@ -14,9 +14,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.client.ResourceAccessException;
 
 import com.wultra.wallet.dto.cnb.CnbExRate;
 import com.wultra.wallet.dto.cnb.CnbExRatesResponse;
+import com.wultra.wallet.exception.ErrorCode;
+import com.wultra.wallet.exception.WultraWalletException;
 
 /** Loading of CNB rate snapshots. Conversion itself is tested in {@link ExchangeRatesTest}. */
 @ExtendWith(MockitoExtension.class)
@@ -44,16 +47,30 @@ class CurrencyRateServiceTest {
     }
 
     @Test
-    void emptyCnbResponseFails() {
-        when(cnbApiClient.getDailyRates(any(LocalDate.class))).thenReturn(new CnbExRatesResponse(List.of()));
+    void cnbUnreachableFailsWithRatesUnavailable() {
+        when(cnbApiClient.getDailyRates(any(LocalDate.class))).thenThrow(new ResourceAccessException("timeout"));
 
-        assertThatThrownBy(() -> service.loadCurrentRates()).isInstanceOf(IllegalStateException.class);
+        assertRatesUnavailable();
     }
 
     @Test
-    void nullCnbResponseFails() {
+    void emptyCnbResponseFailsWithRatesUnavailable() {
+        when(cnbApiClient.getDailyRates(any(LocalDate.class))).thenReturn(new CnbExRatesResponse(List.of()));
+
+        assertRatesUnavailable();
+    }
+
+    @Test
+    void nullCnbResponseFailsWithRatesUnavailable() {
         when(cnbApiClient.getDailyRates(any(LocalDate.class))).thenReturn(null);
 
-        assertThatThrownBy(() -> service.loadCurrentRates()).isInstanceOf(IllegalStateException.class);
+        assertRatesUnavailable();
+    }
+
+    private void assertRatesUnavailable() {
+        assertThatThrownBy(() -> service.loadCurrentRates())
+                .isInstanceOf(WultraWalletException.class)
+                .extracting(e -> ((WultraWalletException) e).getErrorCode())
+                .isEqualTo(ErrorCode.RATES_UNAVAILABLE);
     }
 }

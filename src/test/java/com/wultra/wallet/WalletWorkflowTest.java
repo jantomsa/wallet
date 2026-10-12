@@ -4,6 +4,8 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.comparesEqualTo;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
@@ -18,13 +20,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.cache.CacheManager;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.web.client.ResourceAccessException;
 
 import com.wultra.wallet.dto.cnb.CnbExRate;
 import com.wultra.wallet.dto.cnb.CnbExRatesResponse;
 import com.wultra.wallet.entity.WalletEntity;
 import com.wultra.wallet.repository.WalletRepository;
 import com.wultra.wallet.service.CnbApiClient;
+import com.wultra.wallet.service.CurrencyRateService;
 
 import io.restassured.RestAssured;
 import io.restassured.config.JsonConfig;
@@ -59,6 +64,9 @@ class WalletWorkflowTest {
     @Autowired
     private WalletRepository walletRepository;
 
+    @Autowired
+    private CacheManager cacheManager;
+
     @MockitoBean
     private CnbApiClient cnbApiClient;
 
@@ -74,6 +82,8 @@ class WalletWorkflowTest {
         RestAssured.config = RestAssuredConfig.config().jsonConfig(
                 JsonConfig.jsonConfig().numberReturnType(JsonPathConfig.NumberReturnType.BIG_DECIMAL));
 
+        // the rates cache lives in the shared Spring context – start every test with an empty one
+        cacheManager.getCache(CurrencyRateService.CNB_RATES_CACHE).clear();
         when(cnbApiClient.getDailyRates(any(LocalDate.class))).thenReturn(CNB_RATES);
 
         // fresh user per test, independent of data.sql
@@ -107,6 +117,36 @@ class WalletWorkflowTest {
                 .statusCode(200)
                 .body("balance", comparesEqualTo(new BigDecimal("11.03")))
                 .body("currency", equalTo("EUR"))
+                .body("ratesValidForDate", equalTo("2026-10-09"));
+
+        // steps 4 and 5 used the same cached rate table – CNB was called only once
+        verify(cnbApiClient, times(1)).getDailyRates(any(LocalDate.class));
+    }
+
+    @Test
+    void cnbUnavailableAndNothingCachedReturns503() {
+        when(cnbApiClient.getDailyRates(any(LocalDate.class))).thenThrow(new ResourceAccessException("CNB down"));
+        moneyAction("/deposit", usdWalletId, "USD", "10");
+
+        given()
+                .when().get("/user/{userId}/currency/{currency}", userId, "EUR")
+                .then()
+                .statusCode(503)
+                .body("code", equalTo("RATES_UNAVAILABLE"));
+    }
+
+    @Test
+    void cnbUnavailableButRatesCachedStillWorks() {
+        moneyAction("/deposit", usdWalletId, "USD", "10");
+        // first call loads and caches the rates
+        given().when().get("/user/{userId}/currency/{currency}", userId, "EUR").then().statusCode(200);
+
+        when(cnbApiClient.getDailyRates(any(LocalDate.class))).thenThrow(new ResourceAccessException("CNB down"));
+
+        given()
+                .when().get("/user/{userId}/currency/{currency}", userId, "EUR")
+                .then()
+                .statusCode(200)
                 .body("ratesValidForDate", equalTo("2026-10-09"));
     }
 

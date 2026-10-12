@@ -11,10 +11,10 @@ import com.wultra.wallet.exception.ErrorCode;
 import com.wultra.wallet.exception.WultraWalletException;
 
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.AllArgsConstructor;
 
 @Getter
-@RequiredArgsConstructor
+@AllArgsConstructor
 public class ExchangeRates {
 
     private static final Currency CZK = Currency.getInstance("CZK");
