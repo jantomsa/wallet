@@ -36,4 +36,8 @@ Ive added the in-memory cache. Ive found that rates are refreshed once per day a
 If data are cached for day and CNB is down, it will still serve data. Timezone is set to be sure, that cron is running at correct time.
 
 ### 4. Money precision. How do you represent amounts, and what rounding rules apply to conversions?
-todo
+All amounts and CNB rates are "BigDecimal", never "double" (CNB JSON numbers are parsed directly into "BigDecimal").
+- Deposits and withdrawals are stored exactly as sent – they are never rounded. Input is validated to max 17 digits
+  before and 2 after the decimal point, which matches the DB column `DECIMAL(19, 2)`.
+- Ive tried to put the rounding and scale into property, but its not used everywhere unfortunately. Some of it is in annotations and so on. 
+

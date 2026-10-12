@@ -23,6 +23,7 @@ public class WalletEntity {
     @Column(name = "currency", nullable = false, length = 3)
     private Currency currency;
 
+    @Column(name = "amount", nullable = false, precision = 19, scale = 2)
     private BigDecimal amount;
 
     private String name;
