@@ -9,6 +9,7 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.wultra.wallet.dto.BalanceResponse;
 import com.wultra.wallet.dto.ActionRequest;
@@ -29,6 +30,7 @@ public class WalletService {
 
     private final WalletRepository repository;
     private final CurrencyRateService currencyRateService;
+    private final TransactionTemplate transactionTemplate;
 
     @Value("${application.globalRoundingMode}")
     private RoundingMode globalRoundingMode;
@@ -64,17 +66,16 @@ public class WalletService {
                 .build();
     }
 
-    @Transactional(readOnly = true)
     public BalanceResponse getBalance(UUID userId, Currency targetCurrency) {
-        List<WalletEntity> wallets = repository.findByUserId(userId);
         ExchangeRates rates = currencyRateService.loadCurrentRates();
+        BigDecimal totalBalance = transactionTemplate.execute(_ ->
+                repository.findByUserId(userId).stream()
+                        .map(it -> rates.convert(it.getAmount(), it.getCurrency(), targetCurrency))
+                        .reduce(BigDecimal.ZERO, BigDecimal::add)
+                        .setScale(globalRoundingScale, globalRoundingMode)
+        );
 
-        BigDecimal total = wallets.stream()
-                .map(it -> rates.convert(it.getAmount(), it.getCurrency(), targetCurrency))
-                .reduce(BigDecimal.ZERO, BigDecimal::add)
-                .setScale(globalRoundingScale, globalRoundingMode);
-
-        return new BalanceResponse(total, targetCurrency, rates.getValidFor());
+        return new BalanceResponse(totalBalance, targetCurrency, rates.getValidFor());
     }
 
     @Transactional
