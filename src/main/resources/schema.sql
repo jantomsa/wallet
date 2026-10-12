@@ -4,5 +4,6 @@ CREATE TABLE IF NOT EXISTS wallet
     currency VARCHAR(3)     NOT NULL,
     amount   DECIMAL(19, 4) NOT NULL,
     name     VARCHAR(50)    NOT NULL,
-    user_id  UUID           NOT NULL
+    user_id  UUID           NOT NULL,
+    CONSTRAINT ck_wallet_amount_non_negative CHECK (amount >= 0)
 );

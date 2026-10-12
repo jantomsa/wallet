@@ -56,14 +56,22 @@ public class WalletService {
     public void withdraw(ActionInputDTO input) {
         log.info("Making withdraw with input: {}", input);
         WalletEntity wallet = getWallet(input);
+        verifySufficientFunds(wallet, input.getAmount());
         wallet.setAmount(wallet.getAmount().subtract(input.getAmount()));
+    }
+
+    private void verifySufficientFunds(WalletEntity wallet, BigDecimal amount) {
+        if (wallet.getAmount().compareTo(amount) < 0) {
+            throw new WultraWalletException("Insufficient funds in wallet '" + wallet.getId() + "'",
+                    ErrorCode.INSUFFICIENT_FUNDS);
+        }
     }
 
     private void verifySameCurrency(WalletEntity wallet, Currency requestCurrency) {
         if (!wallet.getCurrency().equals(requestCurrency)) {
-            throw new WultraWalletException("Currency " + requestCurrency.getCurrencyCode()
-                    + " does not match wallet currency " + wallet.getCurrency().getCurrencyCode()
-                    + "; money is not converted on deposit/withdraw",
+            throw new WultraWalletException("Currency '" + requestCurrency.getCurrencyCode()
+                    + "' does not match wallet currency '" + wallet.getCurrency().getCurrencyCode()
+                    + "'. Money is not converted on deposit/withdraw, currency must match.",
                     ErrorCode.CURRENCY_MISMATCH);
         }
     }

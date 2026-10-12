@@ -8,7 +8,8 @@ import lombok.Getter;
 public enum ErrorCode {
     ENTITY_NOT_FOUND(HttpStatus.NOT_FOUND),
     CURRENCY_MISMATCH(HttpStatus.BAD_REQUEST),
-    UNSUPPORTED_CURRENCY(HttpStatus.BAD_REQUEST);
+    UNSUPPORTED_CURRENCY(HttpStatus.BAD_REQUEST),
+    INSUFFICIENT_FUNDS(HttpStatus.CONFLICT);
 
     private final HttpStatus httpStatus;
 
