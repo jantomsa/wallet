@@ -1,0 +1,7 @@
+services:
+  wallet:
+    build: .
+    image: wallet
+    container_name: backend
+    ports:
+      - "8080:8080"

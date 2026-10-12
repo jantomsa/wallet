@@ -1,4 +1,4 @@
-package com.wultra.wallet;
+package com.wultra.wallet.controller;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.comparesEqualTo;

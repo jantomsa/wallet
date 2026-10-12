@@ -1,4 +1,4 @@
-package com.wultra.wallet;
+package com.wultra.wallet.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -25,8 +25,6 @@ import com.wultra.wallet.entity.WalletEntity;
 import com.wultra.wallet.exception.ErrorCode;
 import com.wultra.wallet.exception.WultraWalletException;
 import com.wultra.wallet.repository.WalletRepository;
-import com.wultra.wallet.service.CnbApiClient;
-import com.wultra.wallet.service.WalletService;
 
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)

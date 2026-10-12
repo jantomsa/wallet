@@ -1,0 +1,66 @@
+# Sample requests for the Multicurrency Wallet API.
+# Run in IntelliJ IDEA (HTTP Client) or VS Code (REST Client) – start the app first (./mvnw spring-boot:run).
+# Sample data from src/main/resources/data.sql: one EUR wallet with balance 1.00 EUR.
+
+@host = http://localhost:8080
+@userId = 905a48a6-ffcf-430e-9e92-44bfa08427ac
+@walletId = fcb58bd7-f09a-47f2-a92d-89e20095a4da
+
+### Deposit 1 EUR
+PUT {{host}}/v1/wallet/deposit
+Content-Type: application/json
+
+{
+  "walletId": "{{walletId}}",
+  "amount": 1,
+  "currency": "EUR"
+}
+
+### Withdraw 1 EUR
+PUT {{host}}/v1/wallet/withdraw
+Content-Type: application/json
+
+{
+  "walletId": "{{walletId}}",
+  "amount": 1,
+  "currency": "EUR"
+}
+
+### Total balance in USD (converted with current CNB rates)
+GET {{host}}/v1/wallet/user/{{userId}}/currency/USD
+
+### Total balance in CZK
+GET {{host}}/v1/wallet/user/{{userId}}/currency/CZK
+
+### Error: withdraw more than the balance -> 409 INSUFFICIENT_FUNDS
+PUT {{host}}/v1/wallet/withdraw
+Content-Type: application/json
+
+{
+  "walletId": "{{walletId}}",
+  "amount": 1000000,
+  "currency": "EUR"
+}
+
+### Error: currency does not match the wallet -> 400 CURRENCY_MISMATCH
+PUT {{host}}/v1/wallet/deposit
+Content-Type: application/json
+
+{
+  "walletId": "{{walletId}}",
+  "amount": 1,
+  "currency": "USD"
+}
+
+### Error: invalid input (negative amount) -> 400
+PUT {{host}}/v1/wallet/deposit
+Content-Type: application/json
+
+{
+  "walletId": "{{walletId}}",
+  "amount": -5,
+  "currency": "EUR"
+}
+
+### Health check
+GET {{host}}/actuator/health

@@ -4,8 +4,57 @@ REST API acting as a multicurrency bank account, using daily exchange rates
 of the Czech National Bank (CNB).
 
 ## Build & run
+Requires JDK 25:
 ```
 ./mvnw spring-boot:run
+```
+
+Or with Docker (no local JDK needed):
+```
+docker build -t wallet .
+docker run -p 8080:8080 wallet
+```
+
+## API overview
+
+| Method | Path | Description |
+|---|---|---|
+| `PUT` | `/v1/wallet/deposit` | Deposit money into a wallet (currency must match the wallet) |
+| `PUT` | `/v1/wallet/withdraw` | Withdraw money from a wallet (max. the wallet balance) |
+| `GET` | `/v1/wallet/user/{userId}/currency/{currency}` | Total balance of all user's wallets converted to `currency` |
+
+All requests below (plus error examples) are also in [`wallet.http`](wallet.http) – runnable with one click
+in IntelliJ IDEA (HTTP Client) or VS Code (REST Client).
+
+The application starts with one sample wallet (`src/main/resources/data.sql`):
+user `905a48a6-ffcf-430e-9e92-44bfa08427ac`, EUR wallet `fcb58bd7-f09a-47f2-a92d-89e20095a4da` with balance 1.00 EUR.
+
+**Deposit 1 EUR**
+```
+curl -X PUT 'http://localhost:8080/v1/wallet/deposit' \
+  -H 'Content-Type: application/json' \
+  -d '{"walletId": "fcb58bd7-f09a-47f2-a92d-89e20095a4da", "amount": 1, "currency": "EUR"}'
+```
+
+**Withdraw 1 EUR**
+```
+curl -X PUT 'http://localhost:8080/v1/wallet/withdraw' \
+  -H 'Content-Type: application/json' \
+  -d '{"walletId": "fcb58bd7-f09a-47f2-a92d-89e20095a4da", "amount": 1, "currency": "EUR"}'
+```
+
+**Total balance in USD**
+```
+curl 'http://localhost:8080/v1/wallet/user/905a48a6-ffcf-430e-9e92-44bfa08427ac/currency/USD'
+```
+```json
+{ "balance": 1.17, "currency": "USD", "ratesValidForDate": "2026-10-09" }
+```
+(the balance depends on the current CNB rates)
+
+**Error response** (e.g. withdrawing more than the balance)
+```json
+{ "code": "INSUFFICIENT_FUNDS", "message": "Insufficient funds in wallet 'fcb58bd7-f09a-47f2-a92d-89e20095a4da'" }
 ```
 
 ## API documentation (OpenAPI)
@@ -53,3 +102,14 @@ Some situational exceptions are handled and explained to user.
 
 ### 7. CZK. CNB quotes rates against CZK. How do you treat CZK itself?
 I threat the CZK as rate multiplier with 1, so it will flow into common logic, but it will do noting. 
+
+## Optional extra points
+1. Exposure to AI - not done.
+2. Docker file and docker-compose added.
+3. Logging provided, health endpoints are accessible (http://localhost:8080/actuator/health/liveness)
+4. 
+
+## Limitations: 
+- There is no security
+- There is no limitation on currencies, you can add any currency, but in CNB is only some of them.
+- 
