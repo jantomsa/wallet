@@ -45,10 +45,13 @@ class WalletWorkflowTest {
     private static final Currency USD = Currency.getInstance("USD");
     private static final Currency EUR = Currency.getInstance("EUR");
 
+    /** Friday – what CNB returns when asked on a weekend. */
+    private static final LocalDate RATES_VALID_FOR = LocalDate.of(2026, 10, 9);
+
     /** 1 USD = 22.00 CZK, 1 EUR = 25.52 CZK  ->  1 EUR = 25.52 / 22.00 = 1.16 USD. */
     private static final CnbExRatesResponse CNB_RATES = new CnbExRatesResponse(List.of(
-            new CnbExRate(LocalDate.now(), 1, "USA", "dollar", 1, "USD", new BigDecimal("22.00")),
-            new CnbExRate(LocalDate.now(), 1, "EMU", "euro", 1, "EUR", new BigDecimal("25.52"))));
+            new CnbExRate(RATES_VALID_FOR, 1, "USA", "dollar", 1, "USD", new BigDecimal("22.00")),
+            new CnbExRate(RATES_VALID_FOR, 1, "EMU", "euro", 1, "EUR", new BigDecimal("25.52"))));
 
     @Value("${local.server.port}")
     private int port;
@@ -94,7 +97,8 @@ class WalletWorkflowTest {
                 .then()
                 .statusCode(200)
                 .body("balance", comparesEqualTo(new BigDecimal("12.80")))
-                .body("currency", equalTo("USD"));
+                .body("currency", equalTo("USD"))
+                .body("ratesValidForDate", equalTo("2026-10-09"));
 
         // 5. Total balance in EUR: 5 EUR + 7 USD (* 22.00 / 25.52 = 6.03 EUR) = 11.03 EUR
         given()
@@ -102,7 +106,8 @@ class WalletWorkflowTest {
                 .then()
                 .statusCode(200)
                 .body("balance", comparesEqualTo(new BigDecimal("11.03")))
-                .body("currency", equalTo("EUR"));
+                .body("currency", equalTo("EUR"))
+                .body("ratesValidForDate", equalTo("2026-10-09"));
     }
 
     @Test

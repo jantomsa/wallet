@@ -1,11 +1,12 @@
 package com.wultra.wallet.service;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.math.RoundingMode;
 import java.util.Currency;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +28,12 @@ public class WalletService {
     private final WalletRepository repository;
     private final CurrencyRateService currencyRateService;
 
+    @Value("${application.globalRoundingMode}")
+    private RoundingMode globalRoundingMode;
+
+    @Value("${application.globalNumberScale}")
+    private int globalRoundingScale;
+
     private WalletEntity getWallet(ActionInputDTO input) {
         WalletEntity wallet = repository.findWithLock(input.getWalletId())
                 .orElseThrow(() -> new WultraWalletException("Wallet entity not found by id: " + input.getWalletId(),
@@ -38,10 +45,14 @@ public class WalletService {
     @Transactional(readOnly = true)
     public BalanceResponse getBalance(UUID userId, Currency targetCurrency) {
         List<WalletEntity> wallets = repository.findByUserId(userId);
-        BigDecimal balanceInCurrency = wallets.stream().map(it ->
-                        currencyRateService.convertAmount(it.getCurrency(), targetCurrency, it.getAmount()))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        return new BalanceResponse(balanceInCurrency, targetCurrency);
+        ExchangeRates rates = currencyRateService.loadCurrentRates();
+
+        BigDecimal total = wallets.stream()
+                .map(it -> rates.convert(it.getAmount(), it.getCurrency(), targetCurrency))
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(globalRoundingScale, globalRoundingMode);
+
+        return new BalanceResponse(total, targetCurrency, rates.getValidFor());
     }
 
     /// todo - Approach will be verified in test, desired thing is Pessimistic lock handled in DB
