@@ -17,22 +17,20 @@ import com.wultra.wallet.dto.ActionInputDTO;
 import com.wultra.wallet.service.WalletService;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @Validated
 @RestController
 @RequestMapping("/v1/wallet")
+@RequiredArgsConstructor
 public class WalletControllerV1 {
 
     private final WalletService service;
 
-    public WalletControllerV1(WalletService service) {
-        this.service = service;
-    }
-
-    @GetMapping("/user/{userId}/currency/{currency}")
+    @GetMapping("/user/{userId}/currency/{targetCurrency}")
     public BalanceResponse getTotalBalance(@PathVariable @NonNull UUID userId,
-            @PathVariable @NonNull Currency currency) {
-        return service.getBalance(userId, currency);
+            @PathVariable @NonNull Currency targetCurrency) {
+        return service.getBalance(userId, targetCurrency);
     }
 
     @PutMapping("/deposit")
