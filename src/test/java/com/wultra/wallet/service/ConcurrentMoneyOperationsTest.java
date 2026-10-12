@@ -20,7 +20,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-import com.wultra.wallet.dto.ActionInputDTO;
+import com.wultra.wallet.client.CnbApiClient;
+import com.wultra.wallet.dto.ActionRequest;
 import com.wultra.wallet.entity.WalletEntity;
 import com.wultra.wallet.exception.ErrorCode;
 import com.wultra.wallet.exception.WultraWalletException;
@@ -116,8 +117,8 @@ class ConcurrentMoneyOperationsTest {
         return walletRepository.findById(walletId).orElseThrow().getAmount();
     }
 
-    private static ActionInputDTO input(UUID walletId, String amount) {
-        ActionInputDTO input = new ActionInputDTO();
+    private static ActionRequest input(UUID walletId, String amount) {
+        ActionRequest input = new ActionRequest();
         input.setWalletId(walletId);
         input.setCurrency(EUR);
         input.setAmount(new BigDecimal(amount));

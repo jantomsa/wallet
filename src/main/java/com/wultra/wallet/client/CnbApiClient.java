@@ -1,4 +1,4 @@
-package com.wultra.wallet.service;
+package com.wultra.wallet.client;
 
 import java.net.http.HttpClient;
 import java.time.Duration;

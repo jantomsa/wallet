@@ -6,6 +6,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 
+import com.wultra.wallet.client.CnbApiClient;
 import com.wultra.wallet.dto.cnb.CnbExRatesResponse;
 import com.wultra.wallet.exception.ErrorCode;
 import com.wultra.wallet.exception.WultraWalletException;

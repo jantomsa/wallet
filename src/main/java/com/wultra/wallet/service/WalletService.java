@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.wultra.wallet.dto.BalanceResponse;
-import com.wultra.wallet.dto.ActionInputDTO;
+import com.wultra.wallet.dto.ActionRequest;
 import com.wultra.wallet.dto.CreateWalletRequest;
 import com.wultra.wallet.dto.WalletResponse;
 import com.wultra.wallet.entity.WalletEntity;
@@ -36,7 +36,7 @@ public class WalletService {
     @Value("${application.globalNumberScale}")
     private int globalRoundingScale;
 
-    private WalletEntity getWallet(ActionInputDTO input) {
+    private WalletEntity getWallet(ActionRequest input) {
         WalletEntity wallet = repository.findWithLock(input.getWalletId())
                 .orElseThrow(() -> new WultraWalletException("Wallet entity not found by id: " + input.getWalletId(),
                         ErrorCode.ENTITY_NOT_FOUND));
@@ -78,14 +78,14 @@ public class WalletService {
     }
 
     @Transactional
-    public void deposit(ActionInputDTO input) {
+    public void deposit(ActionRequest input) {
         log.info("Making deposit with input: {}", input);
         WalletEntity wallet = getWallet(input);
         wallet.setAmount(wallet.getAmount().add(input.getAmount()));
     }
 
     @Transactional
-    public void withdraw(ActionInputDTO input) {
+    public void withdraw(ActionRequest input) {
         log.info("Making withdraw with input: {}", input);
         WalletEntity wallet = getWallet(input);
         verifySufficientFunds(wallet, input.getAmount());

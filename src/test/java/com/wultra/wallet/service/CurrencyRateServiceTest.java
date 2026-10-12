@@ -16,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.client.ResourceAccessException;
 
+import com.wultra.wallet.client.CnbApiClient;
 import com.wultra.wallet.dto.cnb.CnbExRate;
 import com.wultra.wallet.dto.cnb.CnbExRatesResponse;
 import com.wultra.wallet.exception.ErrorCode;

@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.wultra.wallet.dto.BalanceResponse;
-import com.wultra.wallet.dto.ActionInputDTO;
+import com.wultra.wallet.dto.ActionRequest;
 import com.wultra.wallet.dto.CreateWalletRequest;
 import com.wultra.wallet.dto.WalletResponse;
 import com.wultra.wallet.service.WalletService;
@@ -45,12 +45,12 @@ public class WalletControllerV1 {
     }
 
     @PutMapping("/deposit")
-    public void deposit(@RequestBody @Valid ActionInputDTO input) {
+    public void deposit(@RequestBody @Valid ActionRequest input) {
         service.deposit(input);
     }
 
     @PutMapping("/withdraw")
-    public void withdraw(@RequestBody @Valid ActionInputDTO inputDTO) {
+    public void withdraw(@RequestBody @Valid ActionRequest inputDTO) {
         service.withdraw(inputDTO);
     }
 

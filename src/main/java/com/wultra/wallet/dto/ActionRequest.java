@@ -12,7 +12,7 @@ import lombok.Data;
 
 @Data
 @Schema(description = "Deposit or withdrawal of money in a single wallet")
-public class ActionInputDTO {
+public class ActionRequest {
 
     @Schema(description = "Id of the wallet to deposit to / withdraw from",
             example = "fcb58bd7-f09a-47f2-a92d-89e20095a4da")

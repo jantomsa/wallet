@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.util.Currency;
 import java.util.List;
 
+import com.wultra.wallet.dto.CzkRate;
 import com.wultra.wallet.dto.cnb.CnbExRate;
 import com.wultra.wallet.exception.ErrorCode;
 import com.wultra.wallet.exception.WultraWalletException;

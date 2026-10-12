@@ -16,7 +16,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.wultra.wallet.dto.ActionInputDTO;
+import com.wultra.wallet.dto.ActionRequest;
 import com.wultra.wallet.entity.WalletEntity;
 import com.wultra.wallet.exception.ErrorCode;
 import com.wultra.wallet.exception.WultraWalletException;
@@ -115,8 +115,8 @@ class WalletServiceTest {
         when(repository.findWithLock(WALLET_ID)).thenReturn(Optional.of(wallet));
     }
 
-    private static ActionInputDTO input(Currency currency, String amount) {
-        ActionInputDTO input = new ActionInputDTO();
+    private static ActionRequest input(Currency currency, String amount) {
+        ActionRequest input = new ActionRequest();
         input.setWalletId(WALLET_ID);
         input.setCurrency(currency);
         input.setAmount(new BigDecimal(amount));
