@@ -83,7 +83,7 @@ currencies (`POST /v1/wallet`). Deposits and withdrawals are never converted –
 the wallet currency, otherwise `400 CURRENCY_MISMATCH`. Conversion happens only when computing the total balance.
 
 ### 1. Missing rates (weekends, public holidays)
-In response is date, for which is deposit calculated. It seems that date "validFor" 
+In response is date, for which is balance calculated. It seems that date "validFor" 
 returned in CNB api is always same for all results and based on that I am using only findFirst. 
 Otherwise, I would return list of currencies with dates. Let the client decide what to do. 
 
@@ -95,18 +95,19 @@ Otherwise, I would return list of currencies with dates. Let the client decide w
 CNB quotes some currencies per multiple units (e.g. 100 JPY = 21.045 CZK), so every conversion uses the quoted amount into CZK first, then to target.
 
 ### 3. CNB unavailable. What does the API do when CNB cannot be reached? Does it cache rates?
-Ive added the in-memory cache. Ive found that rates are refreshed once per day around 14:30. So the TTL for cache is 3min from that time for hour. It will try to get refreshed on working days.
-If data are cached for day and CNB is down, it will still serve data. Timezone is set to be sure, that cron is running at correct time.
+I've added the in-memory cache. I've found that rates are refreshed once per day around 14:30. So the TTL for cache is 3min from that time for half an hour (14:30–15:00). It will try to get refreshed on working days.
+If data are cached for day and CNB is down, it will still serve data. If CNB is down and nothing is cached, it returns `503 RATES_UNAVAILABLE`. Timezone is set to be sure, that cron is running at correct time.
 
 ### 4. Money precision. How do you represent amounts, and what rounding rules apply to conversions?
 All amounts and CNB rates are "BigDecimal", never "double" (CNB JSON numbers are parsed directly into "BigDecimal").
 - Deposits and withdrawals are stored exactly as sent – they are never rounded. Input is validated to max 17 digits
   before and 2 after the decimal point, which matches the DB column `DECIMAL(19, 2)`.
-- Ive tried to put the rounding and scale into property, but its not used everywhere unfortunately. Some of it is in annotations and so on. 
+- Conversions are computed unrounded (34 significant digits, `MathContext.DECIMAL128`); only the final total balance is rounded, once, with banker's rounding (`HALF_EVEN`) to 2 decimal places – configurable via `application.globalRoundingMode` / `application.globalNumberScale`.
+- I've tried to put the rounding and scale into property, but it's not used everywhere unfortunately. Some of it is in annotations and so on. 
 
 ### 5. Concurrency. What happens with simultaneous withdrawals from the same balance?
 I was not sure, which storage to use. At first wanted to use just plain Map as storage. But later it was nicer to use H2 in memory database and use 
-more real-world scenario, where we are leaving these thing of Pessimistic locking to DB. Goal of my solution is to lock row for update on select - (SELECT x ... FOR UPDATE).
+more real-world scenario, where we are leaving these things of Pessimistic locking to DB. Goal of my solution is to lock row for update on select - (SELECT x ... FOR UPDATE).
 This query has locking in name, so developer will not use it without knowledge. 
 
 ### 6. Errors. What do clients receive for invalid input, unknown currency, or insufficient funds?
@@ -125,7 +126,7 @@ Invalid input is rejected by validation, but does not use the `{code, message}` 
 handlers for the validation exceptions in `WultraWalletExceptionHandler` (see Limitations).
 
 ### 7. CZK. CNB quotes rates against CZK. How do you treat CZK itself?
-I threat the CZK as rate multiplier with 1, so it will flow into common logic, but it will do noting. 
+I treat the CZK as rate multiplier with 1, so it will flow into common logic, but it will do nothing. 
 
 ## Optional extra points
 1. Exposure to AI - not done.
